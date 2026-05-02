@@ -15,7 +15,7 @@ spec:
     metadata:
       name: 'kargo-{{path[1]}}'
     spec:
-      project: '{{path[1]}}'
+      project: default
       source:
         repoURL: https://github.com/dhpup/e2e-platform
         targetRevision: HEAD
