@@ -45,13 +45,39 @@ spec:
       - key: backend.redisUrl
         value: ${{ outputs.infra.redis_url }}
   - uses: git-commit
+    as: commit
     config:
       path: ./out
       message: "${{ ctx.stage }}: provision backend (redis @ ${{ outputs.infra.backend_namespace }})"
   - uses: git-push
     config:
       path: ./out
+      generateTargetBranch: true
+  - uses: git-open-pr
+    as: pr
+    config:
+      repoURL: ${{ vars.gitRepo }}
+      createTargetBranch: true
       targetBranch: main
+      title: "${{ ctx.stage }}: provision backend infrastructure"
+      description: |
+        ## Terraform Outputs — ${{ ctx.stage }}
+
+        | Output | Value |
+        |--------|-------|
+        | Redis URL | `${{ outputs.infra.redis_url }}` |
+        | Backend Namespace | `${{ outputs.infra.backend_namespace }}` |
+
+        ### What this PR does
+        - Applies Terraform to create/update the Redis deployment in k3d
+        - Writes `backend.redisUrl` to `env/${{ ctx.stage }}/config.yaml`
+        - Terraform state committed alongside config
+
+        > Merge to apply these values to the `${{ ctx.stage }}` deployment.
+  - uses: git-wait-for-pr
+    config:
+      repoURL: ${{ vars.gitRepo }}
+      prNumber: ${{ outputs.pr.prNumber }}
 
 ---
 # Promotes a single ArgoCD Application (dev or staging) — commits image/feature-flags
