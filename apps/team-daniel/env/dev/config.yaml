@@ -2,4 +2,4 @@ replicaCount: 1
 
 # Populated by Kargo provision-backend task — do not edit manually
 backend:
-  redisUrl: ""
+  redisUrl: map[sensitive:false type:string value:redis://redis.team-daniel-backend-dev.svc.cluster.local:6379]
