@@ -23,11 +23,8 @@ spec:
   promotionTemplate:
     spec:
       steps:
-      # Provision Redis in k3d for this stage and wire the URL into config.yaml
-      - task:
-          name: provision-backend
-      # Commit image tag / feature flags to env/dev/ and pin ArgoCD to the commit SHA
-      - task:
+      - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
+        task:
           name: provision-backend
       - task:
           name: promote-guestbook
@@ -59,7 +56,8 @@ spec:
   promotionTemplate:
     spec:
       steps:
-      - task:
+      - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
+        task:
           name: provision-backend
       - task:
           name: promote-guestbook
@@ -91,7 +89,8 @@ spec:
   promotionTemplate:
     spec:
       steps:
-      - task:
+      - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
+        task:
           name: provision-backend
       - task:
           name: promote-guestbook
