@@ -27,28 +27,23 @@ spec:
   # State file (terraform.tfstate) is written to ./out/apps/team-daniel/terraform/
   # and committed back to git so subsequent promotions have continuity.
   - uses: tf-apply
-    as: tf-apply
     config:
       dir: ./out/apps/team-daniel/terraform
       vars:
       - name: stage
         value: ${{ ctx.stage }}
-  # Extract Terraform outputs — redis_url and backend_namespace
-  - uses: tf-output
-    as: infra
-    config:
-      dir: ./out/apps/team-daniel/terraform
-  # Write the Redis URL into the stage's config so the guestbook pod gets it as BACKEND_URL
+  # Write the Redis URL into the stage's config so the guestbook pod gets it as BACKEND_URL.
+  # URL is deterministic: Terraform always creates redis.<namespace>.svc.cluster.local.
   - uses: yaml-update
     config:
       path: ./out/apps/team-daniel/env/${{ ctx.stage }}/config.yaml
       updates:
       - key: backend.redisUrl
-        value: ${{ outputs.infra.redis_url }}
+        value: "redis://redis.team-daniel-backend-${{ ctx.stage }}.svc.cluster.local:6379"
   - uses: git-commit
     config:
       path: ./out
-      message: "${{ ctx.stage }}: provision backend (redis @ ${{ outputs.infra.backend_namespace }})"
+      message: "${{ ctx.stage }}: provision backend"
   - uses: git-push
     config:
       path: ./out
