@@ -1,0 +1,20 @@
+image:
+  repository: ghcr.io/akuity/guestbook
+  pullPolicy: IfNotPresent
+  tag: latest
+
+replicaCount: 1
+
+useRollout: false
+
+featureFlags: {}
+  # FEATURE_FOO: enabled
+
+service:
+  type: ClusterIP
+  port: 80
+
+# Populated by Kargo's provision-backend task during promotion.
+# Terraform provisions the backend service and writes its URL here.
+backend:
+  redisUrl: ""

@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: team-daniel
+  namespace: argocd
+spec:
+  ignoreApplicationDifferences:
+  - jsonPointers:
+    - /spec/source/targetRevision
+  generators:
+  - list:
+      elements:
+      - stage: dev
+      - stage: staging
+  template:
+    metadata:
+      name: team-daniel-{{stage}}
+      annotations:
+        kargo.akuity.io/authorized-stage: team-daniel:{{stage}}
+    spec:
+      project: team-daniel
+      source:
+        repoURL: https://github.com/dhpup/e2e-platform
+        targetRevision: main
+        path: apps/team-daniel/charts/guestbook
+        helm:
+          valueFiles:
+          - /apps/team-daniel/env/{{stage}}/image.yaml
+          - /apps/team-daniel/env/{{stage}}/config.yaml
+          - /apps/team-daniel/env/{{stage}}/feature-flags.yaml
+      destination:
+        name: demo1
+        namespace: team-daniel-{{stage}}
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true

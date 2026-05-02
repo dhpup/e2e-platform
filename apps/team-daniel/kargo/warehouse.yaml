@@ -1,0 +1,30 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
+  name: guestbook
+  namespace: team-daniel
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  subscriptions:
+  - image:
+      repoURL: ghcr.io/akuity/guestbook
+      imageSelectionStrategy: SemVer
+
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
+  name: features
+  namespace: team-daniel
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  subscriptions:
+  - git:
+      repoURL: https://github.com/dhpup/e2e-platform
+      branch: main
+      commitSelectionStrategy: NewestFromBranch
+      discoveryLimit: 20
+      includePaths:
+      - apps/team-daniel/base/feature-flags.yaml

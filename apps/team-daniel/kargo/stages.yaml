@@ -1,0 +1,97 @@
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: dev
+  namespace: team-daniel
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    kargo.akuity.io/color: gray
+    kargo.akuity.io/argocd-context: '[{"name":"team-daniel-dev","namespace":"argocd"}]'
+spec:
+  requestedFreight:
+  - origin:
+      kind: Warehouse
+      name: guestbook
+    sources:
+      direct: true
+  - origin:
+      kind: Warehouse
+      name: features
+    sources:
+      direct: true
+  promotionTemplate:
+    spec:
+      steps:
+      # Provision Redis in k3d for this stage and wire the URL into config.yaml
+      - task:
+          name: provision-backend
+      # Commit image tag / feature flags to env/dev/ and pin ArgoCD to the commit SHA
+      - task:
+          name: promote-guestbook
+
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: staging
+  namespace: team-daniel
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    kargo.akuity.io/color: blue
+    kargo.akuity.io/argocd-context: '[{"name":"team-daniel-staging","namespace":"argocd"}]'
+spec:
+  requestedFreight:
+  - origin:
+      kind: Warehouse
+      name: guestbook
+    sources:
+      stages:
+      - dev
+  - origin:
+      kind: Warehouse
+      name: features
+    sources:
+      stages:
+      - dev
+  verification:
+    analysisTemplates:
+    - name: staging-analysis
+  promotionTemplate:
+    spec:
+      steps:
+      - task:
+          name: provision-backend
+      - task:
+          name: promote-guestbook
+
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: prod
+  namespace: team-daniel
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    kargo.akuity.io/color: green
+    kargo.akuity.io/argocd-context: '[]'
+spec:
+  requestedFreight:
+  - origin:
+      kind: Warehouse
+      name: guestbook
+    sources:
+      stages:
+      - staging
+  - origin:
+      kind: Warehouse
+      name: features
+    sources:
+      stages:
+      - staging
+  promotionTemplate:
+    spec:
+      steps:
+      # Commits to env/prod/ — the fleet ApplicationSet auto-syncs to all clusters
+      - task:
+          name: promote-guestbook-fleet

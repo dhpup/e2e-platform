@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: team-daniel-prod
+  namespace: argocd
+spec:
+  generators:
+  - clusters:
+      selector:
+        matchLabels:
+          fleet: "true"
+  template:
+    metadata:
+      name: team-daniel-prod-{{name}}
+      annotations:
+        # All fleet clusters share the same Kargo prod stage authorization
+        kargo.akuity.io/authorized-stage: team-daniel:prod
+    spec:
+      project: team-daniel
+      source:
+        repoURL: https://github.com/dhpup/e2e-platform
+        targetRevision: main
+        path: apps/team-daniel/charts/guestbook
+        helm:
+          valueFiles:
+          - /apps/team-daniel/env/prod/image.yaml
+          - /apps/team-daniel/env/prod/config.yaml
+          - /apps/team-daniel/env/prod/feature-flags.yaml
+      destination:
+        name: '{{name}}'
+        namespace: team-daniel-prod
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true

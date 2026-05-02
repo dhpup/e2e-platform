@@ -1,0 +1,33 @@
+# TODO: set repoURL to your fork of e2e-platform
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: argocd-apps
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: https://github.com/dhpup/e2e-platform
+      revision: HEAD
+      directories:
+      - path: apps/*/argocd
+  template:
+    metadata:
+      name: 'argocd-{{path[1]}}'
+    spec:
+      # Uses default project to avoid chicken-and-egg: each app's AppProject
+      # lives inside the argocd/ path this Application syncs.
+      project: default
+      source:
+        repoURL: https://github.com/dhpup/e2e-platform
+        targetRevision: HEAD
+        path: '{{path}}'
+        directory:
+          recurse: true
+      destination:
+        name: in-cluster
+        namespace: argocd
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true

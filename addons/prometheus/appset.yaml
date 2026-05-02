@@ -1,0 +1,38 @@
+# TODO: set PLATFORM_REPO_URL to your fork of e2e-platform before applying
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: addon-prometheus
+  namespace: argocd
+spec:
+  generators:
+  - clusters:
+      selector:
+        matchLabels:
+          fleet: "true"
+  template:
+    metadata:
+      name: '{{name}}-prometheus'
+    spec:
+      project: default
+      sources:
+      - repoURL: https://github.com/dhpup/e2e-platform
+        targetRevision: HEAD
+        ref: localValues
+      - chart: prometheus
+        repoURL: https://prometheus-community.github.io/helm-charts
+        targetRevision: 27.41.2
+        helm:
+          releaseName: prometheus
+          valueFiles:
+          - $localValues/addons/prometheus/values.yaml
+      destination:
+        name: '{{name}}'
+        namespace: prometheus
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+        - ServerSideApply=true

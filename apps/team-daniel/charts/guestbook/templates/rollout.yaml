@@ -1,0 +1,42 @@
+{{- if .Values.useRollout }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: guestbook
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: guestbook
+  template:
+    metadata:
+      labels:
+        app: guestbook
+    spec:
+      containers:
+      - name: guestbook
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.port }}
+        {{- with .Values.securityContext }}
+        securityContext:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        envFrom:
+        - configMapRef:
+            name: feature-flags
+        {{- if .Values.backend.redisUrl }}
+        env:
+        - name: BACKEND_URL
+          value: {{ .Values.backend.redisUrl | quote }}
+        {{- end }}
+  strategy:
+    canary:
+      steps:
+      - setWeight: 20
+      - pause:
+          duration: 1m
+      - setWeight: 100
+{{- end }}

@@ -1,0 +1,25 @@
+server:
+  persistentVolume:
+    enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+
+alertmanager:
+  enabled: false
+
+prometheus-pushgateway:
+  enabled: false
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi

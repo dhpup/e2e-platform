@@ -1,0 +1,28 @@
+# One-time bootstrap: apply this to ArgoCD to seed the entire platform.
+# After this is synced, ArgoCD manages everything else via the ApplicationSets
+# in bootstrap/.
+#
+# Apply with:
+#   make bootstrap-apps   (from e2e-infra/)
+#
+# TODO: set repoURL to your fork of e2e-platform
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-of-apps
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dhpup/e2e-platform
+    targetRevision: HEAD
+    path: bootstrap
+    directory:
+      recurse: false
+  destination:
+    name: in-cluster
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

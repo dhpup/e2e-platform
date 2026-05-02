@@ -1,0 +1,23 @@
+# Syncs addons/ to ArgoCD, which creates per-addon ApplicationSets that fan
+# out to every cluster labeled fleet=true.
+# TODO: set repoURL to your fork of e2e-platform
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-addons
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dhpup/e2e-platform
+    targetRevision: HEAD
+    path: addons
+    directory:
+      recurse: true
+  destination:
+    name: in-cluster
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

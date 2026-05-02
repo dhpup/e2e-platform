@@ -1,0 +1,161 @@
+# Provisions per-stage backend infrastructure via Terraform (Kubernetes provider).
+# Runs tf-apply to create a Redis service in k3d, extracts the endpoint,
+# writes it to config.yaml, and commits the result (including TF state) to git.
+#
+# NOTE: The Kargo agent's service account needs permissions to create Namespaces,
+# Deployments, and Services. Apply the RBAC in argocd/terraform-rbac.yaml if
+# tf-apply fails with permission errors.
+apiVersion: kargo.akuity.io/v1alpha1
+kind: PromotionTask
+metadata:
+  name: provision-backend
+  namespace: team-daniel
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  vars:
+  - name: gitRepo
+    value: https://github.com/dhpup/e2e-platform
+  steps:
+  - uses: git-clone
+    config:
+      repoURL: ${{ vars.gitRepo }}
+      checkout:
+      - branch: main
+        path: ./out
+  # Apply Terraform — creates/updates Redis namespace + deployment + service in k3d.
+  # State file (terraform.tfstate) is written to ./out/apps/team-daniel/terraform/
+  # and committed back to git so subsequent promotions have continuity.
+  - uses: tf-apply
+    as: tf-apply
+    config:
+      path: ./out/apps/team-daniel/terraform
+      vars:
+        stage: ${{ ctx.stage }}
+  # Extract Terraform outputs — redis_url and backend_namespace
+  - uses: tf-output
+    as: infra
+    config:
+      path: ./out/apps/team-daniel/terraform
+  # Write the Redis URL into the stage's config so the guestbook pod gets it as BACKEND_URL
+  - uses: yaml-update
+    config:
+      path: ./out/apps/team-daniel/env/${{ ctx.stage }}/config.yaml
+      updates:
+      - key: backend.redisUrl
+        value: ${{ outputs.infra.redis_url }}
+  - uses: git-commit
+    config:
+      path: ./out
+      message: "${{ ctx.stage }}: provision backend (redis @ ${{ outputs.infra.backend_namespace }})"
+  - uses: git-push
+    config:
+      path: ./out
+      targetBranch: main
+
+---
+# Promotes a single ArgoCD Application (dev or staging) — commits image/feature-flags
+# to env/<stage>/ and pins the Application's targetRevision to the exact commit SHA.
+apiVersion: kargo.akuity.io/v1alpha1
+kind: PromotionTask
+metadata:
+  name: promote-guestbook
+  namespace: team-daniel
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  vars:
+  - name: gitRepo
+    value: https://github.com/dhpup/e2e-platform
+  - name: imageRepo
+    value: ghcr.io/akuity/guestbook
+  steps:
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" || ctx.targetFreight.origin.name == "features" }}
+    uses: git-clone
+    config:
+      repoURL: ${{ vars.gitRepo }}
+      checkout:
+      - branch: main
+        path: ./out
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
+    uses: yaml-update
+    as: update-image
+    config:
+      path: ./out/apps/team-daniel/env/${{ ctx.stage }}/image.yaml
+      updates:
+      - key: image.tag
+        value: ${{ imageFrom(vars.imageRepo).Tag }}
+  - if: ${{ ctx.targetFreight.origin.name == "features" }}
+    uses: copy
+    config:
+      inPath: ./out/apps/team-daniel/base/feature-flags.yaml
+      outPath: ./out/apps/team-daniel/env/${{ ctx.stage }}/feature-flags.yaml
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" || ctx.targetFreight.origin.name == "features" }}
+    uses: git-commit
+    as: commit
+    config:
+      path: ./out
+      message: "${{ ctx.stage }}: promote ${{ ctx.targetFreight.origin.name }}"
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" || ctx.targetFreight.origin.name == "features" }}
+    uses: git-push
+    config:
+      path: ./out
+      targetBranch: main
+  # Pins the ArgoCD Application's targetRevision to the exact commit SHA produced above.
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" || ctx.targetFreight.origin.name == "features" }}
+    uses: argocd-update
+    config:
+      apps:
+      - name: team-daniel-${{ ctx.stage }}
+        sources:
+        - repoURL: ${{ vars.gitRepo }}
+          desiredRevision: ${{ task.outputs['commit'].commit }}
+          updateTargetRevision: true
+
+---
+# Promotes to all fleet clusters (prod) — commits image/feature-flags to env/prod/
+# and relies on the fleet ApplicationSet (clusters generator) to auto-sync to every cluster.
+# No argocd-update since fleet apps are named team-daniel-prod-<cluster> by the AppSet.
+apiVersion: kargo.akuity.io/v1alpha1
+kind: PromotionTask
+metadata:
+  name: promote-guestbook-fleet
+  namespace: team-daniel
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  vars:
+  - name: gitRepo
+    value: https://github.com/dhpup/e2e-platform
+  - name: imageRepo
+    value: ghcr.io/akuity/guestbook
+  steps:
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" || ctx.targetFreight.origin.name == "features" }}
+    uses: git-clone
+    config:
+      repoURL: ${{ vars.gitRepo }}
+      checkout:
+      - branch: main
+        path: ./out
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
+    uses: yaml-update
+    config:
+      path: ./out/apps/team-daniel/env/prod/image.yaml
+      updates:
+      - key: image.tag
+        value: ${{ imageFrom(vars.imageRepo).Tag }}
+  - if: ${{ ctx.targetFreight.origin.name == "features" }}
+    uses: copy
+    config:
+      inPath: ./out/apps/team-daniel/base/feature-flags.yaml
+      outPath: ./out/apps/team-daniel/env/prod/feature-flags.yaml
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" || ctx.targetFreight.origin.name == "features" }}
+    uses: git-commit
+    config:
+      path: ./out
+      message: "prod: promote ${{ ctx.targetFreight.origin.name }}"
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" || ctx.targetFreight.origin.name == "features" }}
+    uses: git-push
+    config:
+      path: ./out
+      targetBranch: main

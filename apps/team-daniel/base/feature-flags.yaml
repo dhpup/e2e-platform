@@ -1,0 +1,7 @@
+featureFlags:
+  FEATURE_AAA: enabled
+  FEATURE_BBB: enabled
+  FEATURE_CCC: enabled
+  FEATURE_DDD: enabled
+  FEATURE_EEE: enabled
+  FEATURE_FFF: enabled
