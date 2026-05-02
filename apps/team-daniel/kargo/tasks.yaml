@@ -29,14 +29,15 @@ spec:
   - uses: tf-apply
     as: tf-apply
     config:
-      path: ./out/apps/team-daniel/terraform
+      dir: ./out/apps/team-daniel/terraform
       vars:
-        stage: ${{ ctx.stage }}
+      - key: stage
+        value: ${{ ctx.stage }}
   # Extract Terraform outputs — redis_url and backend_namespace
   - uses: tf-output
     as: infra
     config:
-      path: ./out/apps/team-daniel/terraform
+      dir: ./out/apps/team-daniel/terraform
   # Write the Redis URL into the stage's config so the guestbook pod gets it as BACKEND_URL
   - uses: yaml-update
     config:
