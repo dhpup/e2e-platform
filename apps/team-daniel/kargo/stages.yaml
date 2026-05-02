@@ -34,41 +34,6 @@ spec:
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
 metadata:
-  name: staging
-  namespace: team-daniel
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
-    kargo.akuity.io/color: blue
-    kargo.akuity.io/argocd-context: '[{"name":"team-daniel-staging","namespace":"argocd"}]'
-spec:
-  requestedFreight:
-  - origin:
-      kind: Warehouse
-      name: guestbook
-    sources:
-      stages:
-      - dev
-  - origin:
-      kind: Warehouse
-      name: features
-    sources:
-      stages:
-      - dev
-  verification:
-    analysisTemplates:
-    - name: staging-analysis
-  promotionTemplate:
-    spec:
-      steps:
-      - task:
-          name: provision-backend
-      - task:
-          name: promote-guestbook
-
----
-apiVersion: kargo.akuity.io/v1alpha1
-kind: Stage
-metadata:
   name: prod
   namespace: team-daniel
   annotations:
@@ -82,13 +47,13 @@ spec:
       name: guestbook
     sources:
       stages:
-      - staging
+      - dev
   - origin:
       kind: Warehouse
       name: features
     sources:
       stages:
-      - staging
+      - dev
   promotionTemplate:
     spec:
       steps:
