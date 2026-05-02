@@ -28,6 +28,8 @@ spec:
           name: provision-backend
       # Commit image tag / feature flags to env/dev/ and pin ArgoCD to the commit SHA
       - task:
+          name: provision-backend
+      - task:
           name: promote-guestbook
 
 ---
@@ -58,6 +60,8 @@ spec:
     spec:
       steps:
       - task:
+          name: provision-backend
+      - task:
           name: promote-guestbook
 
 ---
@@ -87,5 +91,7 @@ spec:
   promotionTemplate:
     spec:
       steps:
+      - task:
+          name: provision-backend
       - task:
           name: promote-guestbook
