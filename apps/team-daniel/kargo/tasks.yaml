@@ -32,18 +32,22 @@ spec:
       vars:
       - name: stage
         value: ${{ ctx.stage }}
-  # Write the Redis URL into the stage's config so the guestbook pod gets it as BACKEND_URL.
-  # URL is deterministic: Terraform always creates redis.<namespace>.svc.cluster.local.
+  # Capture Terraform outputs (redis_url, backend_namespace) for use in subsequent steps.
+  - uses: tf-output
+    as: infra
+    config:
+      dir: ./out/apps/team-daniel/terraform
+  # Write the Redis URL from Terraform output into config so the guestbook pod gets BACKEND_URL.
   - uses: yaml-update
     config:
       path: ./out/apps/team-daniel/env/${{ ctx.stage }}/config.yaml
       updates:
       - key: backend.redisUrl
-        value: "redis://redis.team-daniel-backend-${{ ctx.stage }}.svc.cluster.local:6379"
+        value: ${{ outputs.infra.redis_url }}
   - uses: git-commit
     config:
       path: ./out
-      message: "${{ ctx.stage }}: provision backend"
+      message: "${{ ctx.stage }}: provision backend (redis @ ${{ outputs.infra.backend_namespace }})"
   - uses: git-push
     config:
       path: ./out
