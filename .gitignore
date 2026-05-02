@@ -1,0 +1,6 @@
+# Terraform provider cache — recreated by `terraform init`, never commit
+**/.terraform/
+
+# Local tfvars — may contain org names or passwords
+**/*.tfvars
+!**/*.tfvars.example
