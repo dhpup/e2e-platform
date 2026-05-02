@@ -31,7 +31,7 @@ spec:
     config:
       dir: ./out/apps/team-daniel/terraform
       vars:
-      - key: stage
+      - name: stage
         value: ${{ ctx.stage }}
   # Extract Terraform outputs — redis_url and backend_namespace
   - uses: tf-output
