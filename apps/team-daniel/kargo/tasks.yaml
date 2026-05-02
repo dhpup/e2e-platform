@@ -17,44 +17,46 @@ spec:
   - name: gitRepo
     value: https://github.com/dhpup/e2e-platform
   steps:
-  - uses: git-clone
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
+    uses: git-clone
     config:
       repoURL: ${{ vars.gitRepo }}
       checkout:
       - branch: main
         path: ./out
-  # Apply Terraform — creates/updates Redis namespace + deployment + service in k3d.
-  # State file (terraform.tfstate) is written to ./out/apps/team-daniel/terraform/
-  # and committed back to git so subsequent promotions have continuity.
-  - uses: tf-apply
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
+    uses: tf-apply
     config:
       dir: ./out/apps/team-daniel/terraform
       vars:
       - name: stage
         value: ${{ ctx.stage }}
-  # Capture Terraform outputs (redis_url, backend_namespace) for use in subsequent steps.
-  - uses: tf-output
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
+    uses: tf-output
     as: infra
     config:
       dir: ./out/apps/team-daniel/terraform
-  # Write the Redis URL from Terraform output into config so the guestbook pod gets BACKEND_URL.
-  - uses: yaml-update
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
+    uses: yaml-update
     config:
       path: ./out/apps/team-daniel/env/${{ ctx.stage }}/config.yaml
       updates:
       - key: backend.redisUrl
         value: ${{ task.outputs['infra'].redis_url }}
-  - uses: git-commit
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
+    uses: git-commit
     as: commit
     config:
       path: ./out
       message: "${{ ctx.stage }}: provision backend (redis @ ${{ task.outputs['infra'].backend_namespace }})"
-  - uses: git-push
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
+    uses: git-push
     as: push
     config:
       path: ./out
       generateTargetBranch: true
-  - uses: git-open-pr
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
+    uses: git-open-pr
     as: pr
     config:
       repoURL: ${{ vars.gitRepo }}
@@ -91,7 +93,7 @@ spec:
         ```
 
         > Merge to apply this config to the `${{ ctx.stage }}` deployment.
-  - if: ${{ task.outputs['pr'] != nil }}
+  - if: ${{ ctx.targetFreight.origin.name == "guestbook" && task.outputs['pr'] != nil }}
     uses: git-wait-for-pr
     config:
       repoURL: ${{ vars.gitRepo }}
