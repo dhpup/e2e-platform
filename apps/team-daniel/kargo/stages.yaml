@@ -34,12 +34,12 @@ spec:
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
 metadata:
-  name: prod
+  name: prod-demo1
   namespace: team-daniel
   annotations:
     argocd.argoproj.io/sync-wave: "2"
     kargo.akuity.io/color: green
-    kargo.akuity.io/argocd-context: '[]'
+    kargo.akuity.io/argocd-context: '[{"name":"team-daniel-prod-demo1","namespace":"argocd"}]'
 spec:
   requestedFreight:
   - origin:
@@ -57,6 +57,35 @@ spec:
   promotionTemplate:
     spec:
       steps:
-      # Commits to env/prod/ — the fleet ApplicationSet auto-syncs to all clusters
       - task:
-          name: promote-guestbook-fleet
+          name: promote-guestbook
+
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: prod-demo2
+  namespace: team-daniel
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    kargo.akuity.io/color: green
+    kargo.akuity.io/argocd-context: '[{"name":"team-daniel-prod-demo2","namespace":"argocd"}]'
+spec:
+  requestedFreight:
+  - origin:
+      kind: Warehouse
+      name: guestbook
+    sources:
+      stages:
+      - dev
+  - origin:
+      kind: Warehouse
+      name: features
+    sources:
+      stages:
+      - dev
+  promotionTemplate:
+    spec:
+      steps:
+      - task:
+          name: promote-guestbook

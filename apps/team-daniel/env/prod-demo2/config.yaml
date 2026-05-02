@@ -1,0 +1,5 @@
+replicaCount: 1
+
+# Populated by Kargo provision-backend task — do not edit manually
+backend:
+  redisUrl: ""

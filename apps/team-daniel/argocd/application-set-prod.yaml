@@ -13,8 +13,7 @@ spec:
     metadata:
       name: team-daniel-prod-{{name}}
       annotations:
-        # All fleet clusters share the same Kargo prod stage authorization
-        kargo.akuity.io/authorized-stage: team-daniel:prod
+        kargo.akuity.io/authorized-stage: team-daniel:prod-{{name}}
     spec:
       project: team-daniel
       source:
@@ -23,9 +22,9 @@ spec:
         path: apps/team-daniel/charts/guestbook
         helm:
           valueFiles:
-          - /apps/team-daniel/env/prod/image.yaml
-          - /apps/team-daniel/env/prod/config.yaml
-          - /apps/team-daniel/env/prod/feature-flags.yaml
+          - /apps/team-daniel/env/prod-{{name}}/image.yaml
+          - /apps/team-daniel/env/prod-{{name}}/config.yaml
+          - /apps/team-daniel/env/prod-{{name}}/feature-flags.yaml
       destination:
         name: '{{name}}'
         namespace: team-daniel-prod

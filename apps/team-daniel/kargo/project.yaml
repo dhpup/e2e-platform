@@ -16,5 +16,8 @@ spec:
       name: dev
     autoPromotionEnabled: true
   - stageSelector:
-      name: prod
+      name: prod-demo1
+    autoPromotionEnabled: false
+  - stageSelector:
+      name: prod-demo2
     autoPromotionEnabled: false
