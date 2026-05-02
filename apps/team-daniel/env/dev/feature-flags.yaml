@@ -5,3 +5,4 @@ featureFlags:
   FEATURE_DDD: enabled
   FEATURE_EEE: enabled
   FEATURE_FFF: enabled
+  FEATURE_GGG: enabled
