@@ -62,19 +62,35 @@ spec:
       targetBranch: main
       title: "${{ ctx.stage }}: provision backend infrastructure"
       description: |
-        ## Terraform Outputs — ${{ ctx.stage }}
+        ## Terraform Apply — `${{ ctx.stage }}`
 
-        | Output | Value |
-        |--------|-------|
-        | Redis URL | `${{ task.outputs['infra'].redis_url }}` |
-        | Backend Namespace | `${{ task.outputs['infra'].backend_namespace }}` |
+        ### Resources provisioned
 
-        ### What this PR does
-        - Applies Terraform to create/update the Redis deployment in k3d
-        - Writes `backend.redisUrl` to `env/${{ ctx.stage }}/config.yaml`
-        - Terraform state committed alongside config
+        | Resource | Name | Namespace |
+        |---|---|---|
+        | `kubernetes_namespace` | `${{ task.outputs['infra'].backend_namespace }}` | — |
+        | `kubernetes_deployment` | `redis` | `${{ task.outputs['infra'].backend_namespace }}` |
+        | `kubernetes_service` | `redis` | `${{ task.outputs['infra'].backend_namespace }}` |
 
-        > Merge to apply these values to the `${{ ctx.stage }}` deployment.
+        ### Outputs
+
+        | Field | Value |
+        |---|---|
+        | Image | `${{ task.outputs['infra'].redis_image }}` |
+        | Host | `${{ task.outputs['infra'].redis_host }}` |
+        | Port | `${{ task.outputs['infra'].redis_port }}` |
+        | URL | `${{ task.outputs['infra'].redis_url }}` |
+
+        ### Config change
+
+        `env/${{ ctx.stage }}/config.yaml`
+
+        ```yaml
+        backend:
+          redisUrl: "${{ task.outputs['infra'].redis_url }}"
+        ```
+
+        > Merge to apply this config to the `${{ ctx.stage }}` deployment.
   - if: ${{ task.outputs['pr'] != nil }}
     uses: git-wait-for-pr
     config:
