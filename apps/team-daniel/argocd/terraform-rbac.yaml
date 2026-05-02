@@ -1,13 +1,3 @@
-# Grants the Kargo agent's service account permission to create and manage
-# the backend infrastructure that Terraform provisions during promotions.
-#
-# The Kargo agent runs promotion steps (including tf-apply) using the service
-# account of the agent pod in the akuity namespace. This ClusterRole gives it
-# the minimum permissions needed for the team-daniel Terraform module.
-#
-# Verify the correct service account name with:
-#   kubectl get pods -n akuity -l app.kubernetes.io/name=kargo-agent -o jsonpath='{.items[0].spec.serviceAccountName}'
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -32,7 +22,6 @@ roleRef:
   kind: ClusterRole
   name: team-daniel-terraform
 subjects:
-# Update serviceAccountName to match your actual Kargo agent SA
 - kind: ServiceAccount
-  name: kargo-agent
+  name: kargo-controller
   namespace: akuity
