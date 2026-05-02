@@ -147,13 +147,8 @@ spec:
     config:
       path: ./repo
       targetBranch: main
-  # Pins the ArgoCD Application's targetRevision to the exact commit SHA produced above.
   - if: ${{ ctx.targetFreight.origin.name == "guestbook" || ctx.targetFreight.origin.name == "features" }}
     uses: argocd-update
     config:
       apps:
       - name: team-daniel-${{ ctx.stage }}
-        sources:
-        - repoURL: ${{ vars.gitRepo }}
-          desiredRevision: ${{ task.outputs['commit'].commit }}
-          updateTargetRevision: true
