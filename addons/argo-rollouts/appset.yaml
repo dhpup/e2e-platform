@@ -24,9 +24,6 @@ spec:
         name: '{{name}}'
         namespace: argo-rollouts
       syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
         syncOptions:
         - CreateNamespace=true
         - ServerSideApply=true
