@@ -10,6 +10,7 @@ spec:
       selector:
         matchLabels:
           fleet: "true"
+      requeueAfterSeconds: 30
   template:
     metadata:
       name: '{{name}}-prometheus'
