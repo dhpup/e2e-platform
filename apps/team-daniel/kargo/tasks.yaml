@@ -17,46 +17,39 @@ spec:
   - name: gitRepo
     value: https://github.com/dhpup/e2e-platform
   steps:
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
-    uses: git-clone
+  - uses: git-clone
     config:
       repoURL: ${{ vars.gitRepo }}
       checkout:
       - branch: main
         path: ./out
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
-    uses: tf-apply
+  - uses: tf-apply
     config:
       dir: ./out/apps/team-daniel/terraform
       vars:
       - name: stage
         value: ${{ ctx.stage }}
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
-    uses: tf-output
+  - uses: tf-output
     as: infra
     config:
       dir: ./out/apps/team-daniel/terraform
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
-    uses: yaml-update
+  - uses: yaml-update
     config:
       path: ./out/apps/team-daniel/env/${{ ctx.stage }}/config.yaml
       updates:
       - key: backend.redisUrl
         value: ${{ task.outputs['infra'].redis_url }}
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
-    uses: git-commit
+  - uses: git-commit
     as: commit
     config:
       path: ./out
       message: "${{ ctx.stage }}: provision backend (redis @ ${{ task.outputs['infra'].backend_namespace }})"
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
-    uses: git-push
+  - uses: git-push
     as: push
     config:
       path: ./out
       generateTargetBranch: true
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
-    uses: git-open-pr
+  - uses: git-open-pr
     as: pr
     config:
       repoURL: ${{ vars.gitRepo }}
@@ -93,15 +86,14 @@ spec:
         ```
 
         > Merge to apply this config to the `${{ ctx.stage }}` deployment.
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" && task.outputs['pr'] != nil }}
+  - if: ${{ task.outputs['pr'] != nil }}
     uses: git-wait-for-pr
     config:
       repoURL: ${{ vars.gitRepo }}
       prNumber: ${{ task.outputs['pr'].pr.id }}
 
 ---
-# Promotes a single ArgoCD Application (dev or staging) — commits image/feature-flags
-# to env/<stage>/ and pins the Application's targetRevision to the exact commit SHA.
+# Promotes image tag and feature flags together as a unit.
 apiVersion: kargo.akuity.io/v1alpha1
 kind: PromotionTask
 metadata:
@@ -116,39 +108,31 @@ spec:
   - name: imageRepo
     value: ghcr.io/akuity/guestbook
   steps:
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" || ctx.targetFreight.origin.name == "features" }}
-    uses: git-clone
+  - uses: git-clone
     config:
       repoURL: ${{ vars.gitRepo }}
       checkout:
       - branch: main
         path: ./repo
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" }}
-    uses: yaml-update
-    as: update-image
+  - uses: yaml-update
     config:
       path: ./repo/apps/team-daniel/env/${{ ctx.stage }}/image.yaml
       updates:
       - key: image.tag
         value: ${{ imageFrom(vars.imageRepo).Tag }}
-  - if: ${{ ctx.targetFreight.origin.name == "features" }}
-    uses: copy
+  - uses: copy
     config:
       inPath: ./repo/apps/team-daniel/base/feature-flags.yaml
       outPath: ./repo/apps/team-daniel/env/${{ ctx.stage }}/feature-flags.yaml
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" || ctx.targetFreight.origin.name == "features" }}
-    uses: git-commit
-    as: commit
+  - uses: git-commit
     config:
       path: ./repo
-      message: "${{ ctx.stage }}: promote ${{ ctx.targetFreight.origin.name }}"
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" || ctx.targetFreight.origin.name == "features" }}
-    uses: git-push
+      message: "${{ ctx.stage }}: promote"
+  - uses: git-push
     config:
       path: ./repo
       targetBranch: main
-  - if: ${{ ctx.targetFreight.origin.name == "guestbook" || ctx.targetFreight.origin.name == "features" }}
-    uses: argocd-update
+  - uses: argocd-update
     config:
       apps:
       - name: team-daniel-${{ ctx.stage }}

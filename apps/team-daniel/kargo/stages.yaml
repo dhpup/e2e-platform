@@ -12,12 +12,7 @@ spec:
   requestedFreight:
   - origin:
       kind: Warehouse
-      name: guestbook
-    sources:
-      direct: true
-  - origin:
-      kind: Warehouse
-      name: features
+      name: team-daniel
     sources:
       direct: true
   promotionTemplate:
@@ -42,13 +37,7 @@ spec:
   requestedFreight:
   - origin:
       kind: Warehouse
-      name: guestbook
-    sources:
-      stages:
-      - dev
-  - origin:
-      kind: Warehouse
-      name: features
+      name: team-daniel
     sources:
       stages:
       - dev
