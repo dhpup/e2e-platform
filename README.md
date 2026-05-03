@@ -19,6 +19,7 @@ app-of-apps
           │
           ├── kargo-apps ApplicationSet
           │     └── discovers apps/*/kargo/ → syncs Kargo resources to the kargo cluster
+          │           (auto-sync + prune enabled — pipeline changes apply immediately)
           │
           ├── kargo-shared Application
           │     └── syncs kargo-shared/ → shared ClusterPromotionTasks available to all projects
@@ -27,7 +28,34 @@ app-of-apps
                 └── syncs addons/ → creates per-addon ApplicationSets:
                       ├── addon-argo-rollouts → deploys to every cluster labeled fleet=true
                       └── addon-prometheus    → deploys to every cluster labeled fleet=true
+                      (auto-sync disabled — apps generate per cluster but don't deploy automatically)
 ```
+
+## team-daniel pipeline
+
+The `apps/team-daniel/` app is the primary demo app. Its Kargo pipeline:
+
+```
+Warehouse: team-daniel
+  └── subscribes to: ghcr.io/akuity/guestbook (SemVer)
+                     apps/team-daniel/base/feature-flags.yaml (git)
+  │   (image + feature flags promoted as a unit)
+  │
+  ├── pipeline-refresh  [auto]  refreshes kargo-team-daniel in ArgoCD when
+  │                             stages.yaml or project.yaml changes — new stages
+  │                             appear in the Kargo UI within ~30s of a push
+  │
+  ├── dev               [auto]  provision-backend (Terraform → Redis in k3d, PR gate)
+  │                             + promote-guestbook (image tag + feature flags)
+  │
+  └── prod-demo1        [manual]  same tasks, targets the demo1 fleet cluster
+      prod-demo2        [manual]  added automatically by make register-cluster
+```
+
+**Per-stage Terraform state** — each stage stores its own `terraform.tfstate` at
+`env/$stage/terraform.tfstate` (committed to git). A per-stage `env/$stage/backend.tf`
+configures the local backend path; the `provision-backend` task copies it into the
+shared `terraform/` directory before applying, then removes it after.
 
 ## Directory structure
 
@@ -40,38 +68,36 @@ e2e-platform/
 │   ├── kargo-shared.yaml     # shared ClusterPromotionSteps
 │   └── cluster-addons.yaml   # bootstraps the addons layer
 ├── apps/                     # one directory per demo app
-│   └── <app>/
-│       ├── argocd/           # AppProject + ApplicationSet
-│       └── kargo/            # Project, Warehouse, Stages, Tasks
-├── addons/                   # cluster add-ons, deploy to every fleet=true cluster
-│   ├── argo-rollouts/        # ApplicationSet — progressive delivery controller
-│   └── prometheus/           # ApplicationSet — metrics for rollout analysis
+│   └── team-daniel/
+│       ├── argocd/           # AppProject + ApplicationSets (dev + prod fleet)
+│       ├── kargo/            # Project, Warehouse, Stages, Tasks, pipeline-refresh
+│       ├── charts/           # Helm chart for the guestbook app
+│       ├── env/              # per-stage values (image.yaml, config.yaml,
+│       │                     #   feature-flags.yaml, backend.tf, terraform.tfstate)
+│       ├── base/             # shared base config (feature-flags.yaml)
+│       ├── terraform/        # shared OpenTofu module (no state stored here)
+│       └── rbac/             # Kargo agent RBAC for Terraform
+├── addons/                   # cluster add-ons, one ApplicationSet per addon
+│   ├── argo-rollouts/
+│   └── prometheus/
 ├── kargo-shared/             # shared ClusterPromotionTask resources
-└── templated-teams/          # golden path: platform-owned rollout/ingress, teams supply image
+└── templated-teams/          # golden path: platform-owned rollout/ingress
 ```
 
 ## Adding a new app
 
 1. Create `apps/<name>/argocd/` with an `AppProject` and `ApplicationSet`
 2. Create `apps/<name>/kargo/` with `Project`, `Warehouse`, `Stage`, and `PromotionTask`
-3. Push to your platform repo — ArgoCD auto-discovers via the `argocd-apps` and `kargo-apps` ApplicationSets
+3. Push — ArgoCD auto-discovers via the `argocd-apps` and `kargo-apps` ApplicationSets
 
 ## Adding an addon to the fleet
 
 1. Create `addons/<addon-name>/appset.yaml` — ApplicationSet using `clusters: {selector: {fleet: "true"}}`
 2. The `cluster-addons` Application will pick it up on next sync
 
-## Templated teams (golden path)
-
-`templated-teams/` provides a Helm-templated standard project that platform controls. App teams supply:
-- A Docker image + tag
-- A few values in `platform/app-values.yaml` in their app repo
-
-The `templated-teams/appset.yaml` discovers repos in the `dhpup` GitHub org that match `e2e-app-*` pattern, and the `appset-repos.yaml` discovers repos based on SCM provider.
-
 ## TODO before first use
 
-All files containing `dhpup` need to be updated with your actual GitHub org/repo URLs:
+Update all `dhpup` references with your actual GitHub org/repo URLs:
 
 ```bash
 grep -r "dhpup" . --include="*.yaml" -l
