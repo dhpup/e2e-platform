@@ -13,6 +13,9 @@ metadata:
 spec:
   promotionPolicies:
   - stageSelector:
+      name: pipeline-refresh
+    autoPromotionEnabled: true
+  - stageSelector:
       name: dev
     autoPromotionEnabled: true
   - stageSelector:

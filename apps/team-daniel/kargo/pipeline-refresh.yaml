@@ -1,0 +1,52 @@
+# Watches for changes to the Kargo pipeline config (stages, policies) and
+# automatically triggers an ArgoCD refresh of kargo-team-daniel so new stages
+# appear in the Kargo UI immediately after the platform repo is pushed.
+#
+# Requires a secret in the team-daniel project namespace:
+#   name: argocd-refresh-token
+#   keys: url  (e.g. https://your-instance.cd.akuity.cloud)
+#         token (ArgoCD API token with read access)
+# Create via the Kargo UI: Project → Credentials → Add Generic Credential
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
+  name: pipeline-config
+  namespace: team-daniel
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  subscriptions:
+  - git:
+      repoURL: https://github.com/dhpup/e2e-platform
+      branch: main
+      commitSelectionStrategy: NewestFromBranch
+      discoveryLimit: 5
+      includePaths:
+      - apps/team-daniel/kargo/stages.yaml
+      - apps/team-daniel/kargo/project.yaml
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: pipeline-refresh
+  namespace: team-daniel
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  requestedFreight:
+  - origin:
+      kind: Warehouse
+      name: pipeline-config
+    sources:
+      direct: true
+  promotionTemplate:
+    spec:
+      steps:
+      - uses: http
+        config:
+          method: GET
+          url: ${{ secret('argocd-refresh-token').url }}/api/v1/applications/kargo-team-daniel?refresh=hard
+          headers:
+          - name: Authorization
+            value: Bearer ${{ secret('argocd-refresh-token').token }}
+          successExpression: response.status == 200
