@@ -26,6 +26,7 @@ spec:
   - uses: tf-apply
     config:
       dir: ./out/apps/team-daniel/terraform
+      workspace: ${{ ctx.stage }}
       vars:
       - name: stage
         value: ${{ ctx.stage }}
@@ -33,6 +34,7 @@ spec:
     as: infra
     config:
       dir: ./out/apps/team-daniel/terraform
+      workspace: ${{ ctx.stage }}
   - uses: yaml-update
     config:
       path: ./out/apps/team-daniel/env/${{ ctx.stage }}/config.yaml
