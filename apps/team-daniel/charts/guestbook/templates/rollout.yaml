@@ -24,6 +24,8 @@ spec:
         securityContext:
           {{- toYaml . | nindent 10 }}
         {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
         envFrom:
         - configMapRef:
             name: feature-flags
