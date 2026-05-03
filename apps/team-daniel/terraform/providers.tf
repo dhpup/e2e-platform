@@ -8,9 +8,7 @@ terraform {
     }
   }
 
-  # State is committed to git alongside the Terraform config.
-  # For production, replace this with a remote backend (S3, GCS, k8s secret, etc.)
-  backend "local" {}
+
 }
 
 # Explicit in-cluster auth — reads the service account token and CA cert

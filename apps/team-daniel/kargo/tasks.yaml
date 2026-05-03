@@ -23,12 +23,13 @@ spec:
       checkout:
       - branch: main
         path: ./out
+  - uses: copy
+    config:
+      inPath: ./out/apps/team-daniel/env/${{ ctx.stage }}/backend.tf
+      outPath: ./out/apps/team-daniel/terraform/backend.tf
   - uses: tf-apply
     config:
       dir: ./out/apps/team-daniel/terraform
-      env:
-      - name: TF_CLI_ARGS_apply
-        value: -state=../env/${{ ctx.stage }}/terraform.tfstate
       vars:
       - name: stage
         value: ${{ ctx.stage }}
@@ -37,6 +38,9 @@ spec:
     config:
       dir: ./out/apps/team-daniel/terraform
       state: ../env/${{ ctx.stage }}/terraform.tfstate
+  - uses: delete
+    config:
+      path: ./out/apps/team-daniel/terraform/backend.tf
   - uses: yaml-update
     config:
       path: ./out/apps/team-daniel/env/${{ ctx.stage }}/config.yaml
