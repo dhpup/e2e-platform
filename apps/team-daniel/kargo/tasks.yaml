@@ -33,6 +33,13 @@ spec:
       vars:
       - name: stage
         value: ${{ ctx.stage }}
+      env:
+      - name: KUBE_HOST
+        value: "https://kubernetes.default.svc"
+      - name: KUBE_TOKEN
+        value: ${{ sharedSecret('k8s-tf-creds').token }}
+      - name: KUBE_INSECURE_SKIP_TLS_VERIFY
+        value: "true"
   - uses: tf-output
     as: infra
     config:
