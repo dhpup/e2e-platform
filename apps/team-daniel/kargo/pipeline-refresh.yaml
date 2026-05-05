@@ -2,11 +2,11 @@
 # automatically triggers an ArgoCD refresh of kargo-team-daniel so new stages
 # appear in the Kargo UI immediately after the platform repo is pushed.
 #
-# Requires a secret in the team-daniel project namespace:
+# Requires a shared generic credential in Kargo:
 #   name: argocd-refresh-token
 #   keys: url  (e.g. https://your-instance.cd.akuity.cloud)
 #         token (ArgoCD API token with read access)
-# Create via the Kargo UI: Project → Credentials → Add Generic Credential
+# Create via: make kargo-creds (uses kargo create generic-credentials --shared)
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Warehouse
 metadata:
@@ -45,8 +45,8 @@ spec:
       - uses: http
         config:
           method: GET
-          url: ${{ secret('argocd-refresh-token').url }}/api/v1/applications/kargo-team-daniel?refresh=hard
+          url: ${{ sharedSecret('argocd-refresh-token').url }}/api/v1/applications/kargo-team-daniel?refresh=hard
           headers:
           - name: Authorization
-            value: Bearer ${{ secret('argocd-refresh-token').token }}
+            value: Bearer ${{ sharedSecret('argocd-refresh-token').token }}
           successExpression: response.status == 200
