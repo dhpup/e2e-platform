@@ -46,11 +46,15 @@ Warehouse: team-daniel
   │                             appear in the Kargo UI within ~30s of a push
   │
   ├── dev               [auto]  provision-backend (Terraform → Redis in k3d, PR gate)
+  │                             Terraform authenticates in-cluster via the shared
+  │                             `k8s-tf-creds` credential (KUBE_HOST + KUBE_TOKEN env vars)
   │                             + promote-guestbook (image tag + feature flags)
   │
   └── prod-demo1        [manual]  same tasks, targets the demo1 fleet cluster
       prod-demo2        [manual]  added automatically by make register-cluster
 ```
+
+**AppProject sync ordering** — `appproject.yaml` is annotated with `sync-wave: "0"` and `application-set-prod.yaml` with `sync-wave: "1"` so ArgoCD creates the AppProject before the ApplicationSet's child apps reference it.
 
 **Per-stage Terraform state** — each stage stores its own `terraform.tfstate` at
 `env/$stage/terraform.tfstate` (committed to git). A per-stage `env/$stage/backend.tf`
