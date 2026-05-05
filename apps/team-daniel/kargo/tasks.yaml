@@ -38,7 +38,7 @@ spec:
         value: "https://kubernetes.default.svc"
       - name: KUBE_TOKEN
         value: ${{ sharedSecret('k8s-tf-creds').token }}
-      - name: KUBE_INSECURE_SKIP_TLS_VERIFY
+      - name: KUBE_INSECURE
         value: "true"
   - uses: tf-output
     as: infra
