@@ -66,28 +66,3 @@ spec:
 
 
 
----
-apiVersion: kargo.akuity.io/v1alpha1
-kind: Stage
-metadata:
-  name: prod-demo3
-  namespace: team-daniel
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
-    kargo.akuity.io/color: green
-    kargo.akuity.io/argocd-context: '[{"name":"team-daniel-prod-demo3","namespace":"argocd"}]'
-spec:
-  requestedFreight:
-  - origin:
-      kind: Warehouse
-      name: team-daniel
-    sources:
-      stages:
-      - dev
-  promotionTemplate:
-    spec:
-      steps:
-      - task:
-          name: provision-backend
-      - task:
-          name: promote-guestbook
